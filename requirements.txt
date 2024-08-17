@@ -3,7 +3,10 @@ streamlit
 transformers
 faiss-cpu
 langchain
-langchain-community
-pypdf
-tf-keras
+PyPDF2
+tensorflow
+keras
 modelscope
+langchain-community
+langchain_huggingface
+tf-keras
