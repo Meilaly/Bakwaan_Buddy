@@ -1,0 +1,9 @@
+torch
+streamlit
+transformers
+faiss-cpu
+langchain
+langchain-community
+pypdf
+tf-keras
+modelscope
