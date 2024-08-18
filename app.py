@@ -46,7 +46,13 @@ class Yuan2_LLM(LLM):
                                    '<jupyter_code>', '<jupyter_output>', '<empty_output>'], special_tokens=True)
 
         print("Creating model...")
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.bfloat16, trust_remote_code=True).cuda()
+
+        # 检查是否有可用的GPU
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        torch_dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch_dtype, trust_remote_code=True)
+        self.model.to(device)  # 将模型移动到指定设备上
 
     def _call(
         self,
@@ -79,7 +85,8 @@ class Yuan2_LLM(LLM):
 def get_models():
     llm = Yuan2_LLM(model_path)
 
-    model_kwargs = {'device': 'cuda'}
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_kwargs = {'device': device}
     encode_kwargs = {'normalize_embeddings': True}  # set True to compute cosine similarity
     embeddings = HuggingFaceEmbeddings(
         model_name=embedding_model_path,
@@ -121,7 +128,10 @@ def main():
 
     # 随机“八股文”生成器
     st.subheader("随机八股文生成器")
-    random_baguwen = ""
+
+    # 使用 session_state 来存储随机生成的八股文
+    if 'random_baguwen' not in st.session_state:
+        st.session_state.random_baguwen = ''
 
     # Placeholder for showing "思考..."
     thinking_placeholder_random = st.empty()
@@ -151,23 +161,20 @@ def main():
             st.error(f"发生错误: {e}")
             return ""
 
-    # 初始随机八股文
-    random_baguwen = ""
-
     # 按钮操作
     if st.button("生成随机八股文"):
         seed = torch.randint(0, 1000000, (1,)).item()  # 生成随机种子
-        random_baguwen = generate_random_baguwen(seed)
-        st.markdown("随机八股文:")  # 使用Markdown输出
-        st.markdown(random_baguwen)
+        st.session_state.random_baguwen = generate_random_baguwen(seed)
+
     # 添加“换一换”按钮
     if st.button("换一换"):
         seed = torch.randint(0, 1000000, (1,)).item()  # 生成随机种子
-        thinking_placeholder_random.empty()  # 清除旧的占位符内容
-        random_baguwen = generate_random_baguwen(seed)
-        st.markdown("随机八股文:")  # 使用Markdown输出
-        st.markdown(random_baguwen)
+        st.session_state.random_baguwen = generate_random_baguwen(seed)
 
+    # 显示随机八股文
+    if st.session_state.random_baguwen:
+        st.markdown("随机八股文:")
+        st.markdown(st.session_state.random_baguwen)
 
 if __name__ == '__main__':
     main()
